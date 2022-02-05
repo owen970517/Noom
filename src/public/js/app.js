@@ -1,46 +1,76 @@
-const ul = document.querySelector('ul');
-const msg  =  document.querySelector('#msg');
-const urname = document.querySelector('#name');
+//io 함수를 통해 socket.io가 실행하고 있는 서버를 알아서 찾아줌
+const socket = io();
 
-//socket은 서버로의 연결을 뜻함
-// 새로운 창으로 열리는 페이지의 개발자툴에서 나타남
-const socket = new WebSocket(`ws://${window.location.host}`);
+const welcome = document.getElementById('welcome');
+const form  = document.querySelector('form');
+const room = document.getElementById('room');
 
-
-function makeMessage(type , payload) {
-    const msg = {type , payload};
-    return JSON.stringify(msg);
+room.hidden = true;
+let roomName;
+function addMessage(message) {
+    const ul = room.querySelector('ul');
+    const li = document.createElement('li');
+    li.innerText = message;
+    ul.appendChild(li);
 }
-socket.addEventListener("open" ,()=> {
-    console.log("서버랑 연결됬음");
-} )
-
-socket.addEventListener("message" , (message)=> {
-    const li = document.createElement('li');
-    li.innerText = message.data;
-    ul.append(li);
-})
-
-socket.addEventListener('close' , ()=> {
-    console.log("서버랑 연결이 끊어짐");
-})
-/*
-setTimeout(()=> {
-    socket.send("hello from the browser");
-},10000) */
-
-msg.addEventListener('submit' , (e)=> {
+function handleMessageSubmit(e) {
     e.preventDefault();
-    const input = msg.querySelector('input');
-    socket.send(makeMessage("new_message" , input.value));
-    const li = document.createElement('li');
-    li.innerText = `You : ${input.value}`;
-    ul.append(li);
+    const input = room.querySelector('#msg input');
+    const value = input.value;
+    socket.emit("new_message" , input.value , roomName, ()=> {
+        addMessage(`You : ${value}` );
+    });
     input.value = "";
-})
-urname.addEventListener('submit' , (e)=> {
+}
+function handleNameSubmit(e) {
     e.preventDefault();
-    const input = urname.querySelector('input');
-    socket.send(makeMessage("nickname" , input.value));
-    input.value= "";
+    const input = room.querySelector('#name input');
+    socket.emit("nickname" , input.value);
+}
+function showRoom() {
+    welcome.hidden = true;
+    room.hidden = false;
+    const h3 = document.querySelector('h3');
+    h3.innerText =`Room ${roomName}`;
+    const msgForm = room.querySelector('#msg');
+    const nameForm = room.querySelector('#name');
+    msgForm.addEventListener('submit' , handleMessageSubmit);
+    nameForm.addEventListener('submit' , handleNameSubmit)
+}
+
+// socket.io 는 직접 만든 이벤트를 사용가능 , object를 전달해줌
+function handleSubmit(e) {
+    e.preventDefault();
+    const input = form.querySelector('input');
+    socket.emit("enter_room" , input.value , showRoom);
+    roomName = input.value;
+    input.value = "";
+}
+form.addEventListener('submit' , handleSubmit);
+
+socket.on("welcome" , (user,newCount)=> {
+    const h3 = document.querySelector('h3');
+    h3.innerText =`Room ${roomName} (${newCount})`;
+    addMessage(`${user} Joined!!`);
 })
+
+socket.on("bye" , (left ,newCount)=> {
+    const h3 = document.querySelector('h3');
+    h3.innerText =`Room ${roomName} (${newCount})`;
+    addMessage(`${left} left ㅠㅠ ` );
+})
+
+socket.on("new_message" , addMessage)
+
+socket.on("room_change" , (rooms) => {
+    const roomList = welcome.querySelector('ul');
+    roomList.innerHTML = "";
+    if(rooms.length ===0) {
+        return;
+    }
+    rooms.forEach(room=> {
+        const li = document.createElement('li');
+        li.innerText = room;
+        roomList.appendChild(li);
+    })
+} );
