@@ -7,3 +7,5 @@
 - listen()을 통해 localhost의 넘버를 지정할 수 있다.
 - req를 통해 요청을 받아오고 res를 통해 응답을 한다.
 - res.render()를 통해 특정 view 템플릿을 렌더링하여 html을 빌드해서 화면에 보여준다.
+- WebSocket 과 SocketIO의 차이가 뭔지 알게되었습니다.
+- WebRTC에 대해 배우고 WebRTC를 이용하여 local과 remote의 캠을 보여주는 방법을 알게되었습니다.
