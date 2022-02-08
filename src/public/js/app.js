@@ -16,6 +16,7 @@ let muted = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
+let myDataChannel;
 
 async function getCameras() {
     try{
@@ -82,6 +83,13 @@ function handleCameraBtn() {
 }
 async function handleCameraChange() {
     await getMedia(cameraSelect.value);
+    if(myPeerConnection) {
+        const videoTrack = myStream.getVideoTracks()[0]
+        const videoSender = myPeerConnection.getSenders().find((sender)=> 
+            sender.track.kind === "video"
+        )
+        videoSender.replaceTrack(videoTrack);
+    }
 }
 mute.addEventListener('click' , handleMuteBtn);
 camera.addEventListener('click' , handleCameraBtn);
@@ -109,13 +117,20 @@ welcomeForm.addEventListener('submit' ,handleWelcomeSubmit );
 
 // 이 코드는 방을 만드는 브라우저에서 실행되는 코드
 socket.on("welcome" , async ()=> {
-   const offer = await myPeerConnection.createOffer();
-   myPeerConnection.setLocalDescription(offer);
-   console.log("send offer")
-   socket.emit("offer" , offer, roomName);
+    myDataChannel = myPeerConnection.createDataChannel("chat");
+    myDataChannel.addEventListener('message' ,(e)=> console.log(e.data));
+    console.log("made data channel");
+    const offer = await myPeerConnection.createOffer();
+    myPeerConnection.setLocalDescription(offer);
+    console.log("send offer")
+    socket.emit("offer" , offer, roomName);
 })
 // 이 코드는 방에 입장하는 브라우저에서 실행되는 코드
 socket.on("offer" , async (offer)=> {
+    myPeerConnection.addEventListener('datachannel' , (event)=> {
+        myDataChannel = event.channel;
+        myDataChannel.addEventListener('message' , (e)=> console.log(e.data));
+    });
     myPeerConnection.setRemoteDescription(offer);
     console.log("receive offer");
     const answer = await myPeerConnection.createAnswer();
@@ -135,7 +150,19 @@ socket.on("ice" , (ice)=> {
 
 //iceCandidate는 브라우저가 서로 소통할 수 있게 해주는 방법
 function makeConnection() {
-    myPeerConnection = new RTCPeerConnection();
+    myPeerConnection = new RTCPeerConnection({
+        iceServers : [
+            {
+                urls : [
+                    "stun:stun.l.google.com:19302",
+                    "stun:stun1.l.google.com:19302",
+                    "stun:stun2.l.google.com:19302",
+                    "stun:stun3.l.google.com:19302",
+                    "stun:stun4.l.google.com:19302",
+                ],
+            },
+        ],
+    });
     myPeerConnection.addEventListener('icecandidate' , handleIce);
     myPeerConnection.addEventListener("addstream" , handleAddStream)
     myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track , myStream));
