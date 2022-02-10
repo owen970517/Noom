@@ -14,15 +14,20 @@ html(lang="en")
                 form
                     input(type="text" , placeholder="room name" , required)
                     button Enter
+
             div#call
-                div#myStream
-                    h3 my browser
-                    video#myFace(autoplay,playsinline,width="400",height="400" ,audio=false)
-                    button#mute Mute
-                    button#camera Camera Off
-                    select#cameras
-                    h3 peer browser
-                    video#peerFace(autoplay,playsinline,width="400",height="400" ,audio=false)
+                div#streams
+                    div#myStream
+                        h3 my browser
+                        video#myFace(autoplay,playsinline,width="400",height="400" ,audio=false)
+                        div#options
+                            button#mute Mute
+                            button#camera Camera Off
+                            button#leave 나가기
+                        select#cameras
+                    div#peerStream
+                        h3 peer browser
+                        video#peerFace(autoplay,playsinline,width="400",height="400" ,audio=false)
 
          
             

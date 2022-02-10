@@ -7,6 +7,7 @@ const camera = document.getElementById('camera');
 const cameraSelect = document.getElementById('cameras');
 const welcome = document.getElementById('welcome');
 const call = document.getElementById('call');
+const leaveBtn = document.getElementById('leave');
 
 
 call.hidden=true;
@@ -17,6 +18,7 @@ let cameraOff = false;
 let roomName;
 let myPeerConnection;
 let myDataChannel;
+
 
 async function getCameras() {
     try{
@@ -120,17 +122,21 @@ socket.on("welcome" , async ()=> {
     myDataChannel = myPeerConnection.createDataChannel("chat");
     myDataChannel.addEventListener('message' ,(e)=> console.log(e.data));
     console.log("made data channel");
+    const h3 = document.querySelector('h3');
+    h3.innerText =`Room ${roomName} `;
     const offer = await myPeerConnection.createOffer();
     myPeerConnection.setLocalDescription(offer);
     console.log("send offer")
     socket.emit("offer" , offer, roomName);
 })
 // 이 코드는 방에 입장하는 브라우저에서 실행되는 코드
-socket.on("offer" , async (offer)=> {
+socket.on("offer" , async (offer )=> {
     myPeerConnection.addEventListener('datachannel' , (event)=> {
         myDataChannel = event.channel;
         myDataChannel.addEventListener('message' , (e)=> console.log(e.data));
     });
+    const h3 = document.querySelector('h3');
+    h3.innerText =`Room ${roomName}`;
     myPeerConnection.setRemoteDescription(offer);
     console.log("receive offer");
     const answer = await myPeerConnection.createAnswer();
@@ -166,6 +172,10 @@ function makeConnection() {
     myPeerConnection.addEventListener('icecandidate' , handleIce);
     myPeerConnection.addEventListener("addstream" , handleAddStream)
     myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track , myStream));
+    leaveBtn.addEventListener('click' , ()=> {
+        myPeerConnection.removeStream(myStream);
+        myPeerConnection.close();
+    },false);
 }
 
 function handleIce(data) {
@@ -178,3 +188,4 @@ function handleAddStream(data) {
     peerStream.srcObject = data.stream;
     console.log(data)
 }
+
