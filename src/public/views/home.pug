@@ -13,8 +13,8 @@ html(lang="en")
             div#welcome
                 form
                     input(type="text" , placeholder="room name" , required)
+                    input#nickname(type="text" , placeholder="nickname" , required)
                     button Enter
-
             div#call
                 div#streams
                     div#myStream
@@ -28,6 +28,13 @@ html(lang="en")
                     div#peerStream
                         h3 peer browser
                         video#peerFace(autoplay,playsinline,width="400",height="400" ,audio=false)
+        section
+            div#chat
+                h2 Chatting
+                ul
+                form#msg
+                    input(type="text" , placeholder="message" , required)
+                    button Send
 
          
             

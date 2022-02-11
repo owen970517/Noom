@@ -8,14 +8,16 @@ const cameraSelect = document.getElementById('cameras');
 const welcome = document.getElementById('welcome');
 const call = document.getElementById('call');
 const leaveBtn = document.getElementById('leave');
-
+const chat = document.getElementById('chat');
 
 call.hidden=true;
+chat.hidden = true;
 
 let myStream;
 let muted = false;
 let cameraOff = false;
 let roomName;
+let nickName;
 let myPeerConnection;
 let myDataChannel;
 
@@ -52,6 +54,7 @@ async function getMedia(deviceId) {
     try {
         myStream = await navigator.mediaDevices.getUserMedia(
             deviceId ? cameraConstrains : initialConstrains
+            
         );
         myFace.srcObject = myStream;
         if(!deviceId) {
@@ -93,28 +96,55 @@ async function handleCameraChange() {
         videoSender.replaceTrack(videoTrack);
     }
 }
+function addMessage(message) {
+    const ul = document.querySelector('ul');
+    const li = document.createElement('li');
+    li.innerText = message;
+    ul.appendChild(li);
+}
+function handleMessageSubmit(e) {
+    e.preventDefault();
+    const input = document.querySelector('#msg input');
+    const value = input.value;
+    socket.emit("new_message" , input.value , roomName, ()=> {
+        addMessage(`You : ${value}` );
+    });
+    input.value = "";
+}
 mute.addEventListener('click' , handleMuteBtn);
 camera.addEventListener('click' , handleCameraBtn);
 cameraSelect.addEventListener('input' , handleCameraChange);
 
 welcomeForm = welcome.querySelector('form');
+msgForm = document.getElementById('msg');
+msgForm.addEventListener('submit' , handleMessageSubmit);
 
 async function initCall() {
     welcome.hidden = true;
     call.hidden = false;
+    chat.hidden = false;
     await getMedia();
     makeConnection();
+}
+function handleNameSubmit(e) {
+    e.preventDefault();
+    const input = welcomeForm.querySelector('#nickname');
+    socket.emit("nickname" , input.value);
 }
 
 async function handleWelcomeSubmit(e) {
     e.preventDefault();
     const input = welcomeForm.querySelector('input');
+    const nameInput = welcomeForm.querySelector('#nickname');
     await initCall();
     socket.emit("join_room" , input.value );
     roomName =input.value;
+    nickName = nameInput.value;
     input.value = "";
+    nameInput.value = "";
 }
-
+const nameInput = welcomeForm.querySelector('#nickname');
+nameInput.addEventListener('submit' , handleNameSubmit)
 welcomeForm.addEventListener('submit' ,handleWelcomeSubmit );
 
 // 이 코드는 방을 만드는 브라우저에서 실행되는 코드
@@ -123,7 +153,7 @@ socket.on("welcome" , async ()=> {
     myDataChannel.addEventListener('message' ,(e)=> console.log(e.data));
     console.log("made data channel");
     const h3 = document.querySelector('h3');
-    h3.innerText =`Room ${roomName} `;
+    h3.innerText =`${nickName}`;
     const offer = await myPeerConnection.createOffer();
     myPeerConnection.setLocalDescription(offer);
     console.log("send offer")
@@ -136,7 +166,7 @@ socket.on("offer" , async (offer )=> {
         myDataChannel.addEventListener('message' , (e)=> console.log(e.data));
     });
     const h3 = document.querySelector('h3');
-    h3.innerText =`Room ${roomName}`;
+    h3.innerText =`${nickName}`;
     myPeerConnection.setRemoteDescription(offer);
     console.log("receive offer");
     const answer = await myPeerConnection.createAnswer();
@@ -153,6 +183,12 @@ socket.on("ice" , (ice)=> {
     console.log("received candidate");
     myPeerConnection.addIceCandidate(ice);
 })
+
+socket.on("leave_room", () => {
+    removeVideo();
+  });
+
+socket.on("new_message" , addMessage)
 
 //iceCandidate는 브라우저가 서로 소통할 수 있게 해주는 방법
 function makeConnection() {
@@ -173,8 +209,10 @@ function makeConnection() {
     myPeerConnection.addEventListener("addstream" , handleAddStream)
     myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track , myStream));
     leaveBtn.addEventListener('click' , ()=> {
-        myPeerConnection.removeStream(myStream);
-        myPeerConnection.close();
+        socket.disconnect();
+        call.hidden = true;
+        welcome.hidden = false;
+        myStream.getTracks().forEach((track)=> track.stop());
     },false);
 }
 
@@ -188,4 +226,11 @@ function handleAddStream(data) {
     peerStream.srcObject = data.stream;
     console.log(data)
 }
+
+function removeVideo() {
+    const peerStream = document.getElementById('peerFace');
+    peerStream.removeChild(video);
+  }
+
+
 

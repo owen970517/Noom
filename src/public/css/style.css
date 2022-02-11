@@ -83,3 +83,17 @@ main {
 #cameras {
     margin-top: 20px;
 }
+section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#chat h2 {
+    font-size: 30px;
+    color: #fff;
+}
+#chat li {
+    font-size: 20px;
+    list-style: none;
+    color: #fff;
+}
