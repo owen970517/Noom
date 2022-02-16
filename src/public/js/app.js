@@ -106,7 +106,7 @@ function handleMessageSubmit(e) {
     e.preventDefault();
     const input = document.querySelector('#msg input');
     const value = input.value;
-    socket.emit("new_message" , input.value , roomName, ()=> {
+    socket.emit("new_message" , value , roomName, ()=> {
         addMessage(`You : ${value}` );
     });
     input.value = "";
@@ -125,11 +125,13 @@ async function initCall() {
     chat.hidden = false;
     await getMedia();
     makeConnection();
+    nameInput.addEventListener('submit' , handleNameSubmit);
 }
 function handleNameSubmit(e) {
     e.preventDefault();
     const input = welcomeForm.querySelector('#nickname');
-    socket.emit("nickname" , input.value);
+    nickName = input.value
+    socket.emit("nickname" , nickName);
 }
 
 async function handleWelcomeSubmit(e) {
@@ -137,18 +139,17 @@ async function handleWelcomeSubmit(e) {
     const input = welcomeForm.querySelector('input');
     const nameInput = welcomeForm.querySelector('#nickname');
     await initCall();
-    socket.emit("join_room" , input.value );
     roomName =input.value;
     nickName = nameInput.value;
     input.value = "";
     nameInput.value = "";
+    socket.emit("join_room" , roomName , nickName );
 }
 const nameInput = welcomeForm.querySelector('#nickname');
-nameInput.addEventListener('submit' , handleNameSubmit)
 welcomeForm.addEventListener('submit' ,handleWelcomeSubmit );
 
 // 이 코드는 방을 만드는 브라우저에서 실행되는 코드
-socket.on("welcome" , async ()=> {
+socket.on("welcome" , async (user)=> {
     myDataChannel = myPeerConnection.createDataChannel("chat");
     myDataChannel.addEventListener('message' ,(e)=> console.log(e.data));
     console.log("made data channel");
@@ -158,6 +159,7 @@ socket.on("welcome" , async ()=> {
     myPeerConnection.setLocalDescription(offer);
     console.log("send offer")
     socket.emit("offer" , offer, roomName);
+    addMessage(`System : ${user} Joined!!`);
 })
 // 이 코드는 방에 입장하는 브라우저에서 실행되는 코드
 socket.on("offer" , async (offer )=> {
@@ -173,6 +175,7 @@ socket.on("offer" , async (offer )=> {
     myPeerConnection.setLocalDescription(answer);
     socket.emit("answer" , answer , roomName);
     console.log("sent answer");
+    addMessage(`System : Joined ${roomName} room!!!`);
 })
 
 socket.on("answer" , (answer)=> {
@@ -184,8 +187,8 @@ socket.on("ice" , (ice)=> {
     myPeerConnection.addIceCandidate(ice);
 })
 
-socket.on("leave_room", () => {
-    removeVideo();
+socket.on("leave_room", (nickName) => {
+    addMessage(`System : ${nickName} left ㅠㅠ`);
   });
 
 socket.on("new_message" , addMessage)

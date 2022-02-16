@@ -89,11 +89,27 @@ section {
     align-items: center;
 }
 #chat h2 {
-    font-size: 30px;
+    font-size: 4em;
     color: #fff;
 }
 #chat li {
-    font-size: 20px;
+    font-size: 30px;
     list-style: none;
     color: #fff;
+    margin-top: 10px;
+}
+#chat #msg {
+    display: flex;
+    text-align: center;
+    align-items: center;
+    flex-direction: column;
+}
+#chat #msg input {
+    width: 200px;
+    height: 10%;
+    border-radius: 20px;
+    padding: 3px 10px;
+    border: none;
+    margin-bottom: 20px;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
 }
